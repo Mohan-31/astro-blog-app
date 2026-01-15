@@ -1,11 +1,106 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
+import { createSupabaseClient } from '../lib/supabase';
+import Navbar from '../components/Navbar.astro';
+import '../styles/global.css';
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+const supabase = createSupabaseClient(Astro);
+
+const { data: { user } } = await supabase.auth.getUser();
+
+const { data: posts } = await supabase
+  .from('posts')
+  .select('*')
+  .order('created_at', { ascending: false })
+  .limit(5);
 ---
 
-<Layout>
-	<Welcome />
-</Layout>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EchoLog | Your Voice, Amplified</title>
+</head>
+<body>
+  <Navbar />
+
+  <section style="padding: 100px 0; text-align: center; background: radial-gradient(circle at center, #1a2332 0%, #0d1117 100%);">
+    <div class="container">
+      <h1 style="font-size: clamp(2.5rem, 8vw, 4.5rem); font-weight: 800; line-height: 1.1; margin-bottom: 20px;">
+        Boost your <br/><span style="color: var(--primary-green);">Story's Reach.</span>
+      </h1>
+      <p style="color: var(--text-muted); font-size: 1.2rem; max-width: 600px; margin: 0 auto 40px;">
+        A minimalist platform for creators. Write, share, and manage your content with a sleek, high-performance interface.
+      </p>
+      <div style="display: flex; gap: 15px; justify-content: center;">
+        <a href={user ? "/dashboard" : "/register"} class="btn btn-primary">
+          Start Writing - Free
+        </a>
+        <a href="#latest" class="btn btn-outline">Read Latest</a>
+      </div>
+    </div>
+  </section>
+
+  <main class="container" id="latest" style="padding: 80px 0;">
+    <h2 style="margin-bottom: 40px; border-left: 4px solid var(--primary-green); padding-left: 15px;">Latest Insights</h2>
+    <div style="display: grid; gap: 20px;">
+      {posts?.map((post) => (
+        <article class="card" style="display: flex; flex-direction: column; gap: 10px;">
+          <h3 style="margin: 0; font-size: 1.5rem;">{post.title}</h3>
+          <p style="color: var(--text-muted);">{post.content.slice(0, 150)}...</p>
+          
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+            <span style="color: var(--primary-green); font-size: 0.9rem; font-weight: 500;">
+              {new Date(post.created_at).toLocaleDateString()}
+            </span>
+            <a href={`/post/${post.id}`} class="btn btn-outline" style="padding: 8px 20px; font-size: 0.9rem; border-radius: 4px;">
+              Just Read
+            </a>
+          </div>
+        </article>
+      ))}
+    </div>
+  </main>
+
+  <section id="about" style="padding: 80px 0; border-top: 1px solid var(--border-color); background: rgba(255,255,255,0.02);">
+    <div class="container">
+      <div style="max-width: 800px; margin-bottom: 50px;">
+        <h2 style="font-size: 2.5rem; margin-bottom: 20px; border-left: 4px solid var(--primary-green); padding-left: 20px;">
+          Where Words <span style="color: var(--primary-green);">Matter.</span>
+        </h2>
+        <p style="color: var(--text-muted); font-size: 1.1rem; line-height: 1.8;">
+          EchoLog was built out of a desire for <strong>simplicity</strong>. In an era of cluttered interfaces, 
+          we provide a distraction-free environment where your ideas take center stage. 
+          No ads, no bloat just pure content delivered with lightning speed.
+        </p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 25px;">
+        <div class="card" style="text-align: left; border-top: 2px solid var(--primary-green);">
+          <div style="font-size: 1.5rem; margin-bottom: 10px;">🚀</div>
+          <h3 style="margin-top: 0;">Performance</h3>
+          <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0;">Optimized for speed so your readers never wait.</p>
+        </div>
+        <div class="card" style="text-align: left;">
+          <div style="font-size: 1.5rem; margin-bottom: 10px;">🛡️</div>
+          <h3 style="margin-top: 0;">Privacy First</h3>
+          <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0;">Secure authentication ensuring you own your content.</p>
+        </div>
+        <div class="card" style="text-align: left;">
+          <div style="font-size: 1.5rem; margin-bottom: 10px;">✨</div>
+          <h3 style="margin-top: 0;">Modern UI</h3>
+          <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0;">A dark-mode aesthetic that is easy on the eyes.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer style="text-align: center; padding: 60px 0; border-top: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.9rem;">
+    <p style="margin-bottom: 10px;">&copy; EchoLog Platform.</p>
+    <div style="display: flex; gap: 20px; justify-content: center;">
+      <a href="/login" style="color: var(--text-muted); text-decoration: none;">Read</a>
+      <a href="/register" style="color: var(--text-muted); text-decoration: none;">write</a>
+      <a href="/dashboard" style="color: var(--text-muted); text-decoration: none;">Enjoy</a>
+    </div>
+  </footer>
+</body>
+</html>

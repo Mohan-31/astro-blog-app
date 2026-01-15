@@ -1,0 +1,76 @@
+---
+export const prerender = false;
+import { createSupabaseClient } from '../lib/supabase';
+import Navbar from '../components/Navbar.astro';
+import '../styles/global.css';
+
+let error = '';
+const supabase = createSupabaseClient(Astro);
+
+if (Astro.request.method === 'POST') {
+  try {
+    const form = await Astro.request.formData();
+    const email = String(form.get('email'));
+    const password = String(form.get('password'));
+
+    const { error: authError } = await supabase.auth.signInWithPassword({ 
+      email, 
+      password 
+    });
+
+    if (authError) {
+      error = authError.message;
+    } else {
+      return Astro.redirect('/');
+    }
+  } catch (e) {
+    error = "Invalid form submission.";
+  }
+}
+---
+
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EchoLog | Sign In</title>
+</head>
+<body style="display: flex; flex-direction: column; min-height: 100vh;">
+    <Navbar />
+
+    <main class="container" style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px 0;">
+        <div class="card" style="width: 100%; max-width: 450px;">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <h1 style="font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem;">Welcome Back</h1>
+                <p style="color: var(--text-muted);">Please enter your details to sign in.</p>
+            </div>
+
+            {error && (
+                <div style="background: rgba(250, 82, 82, 0.1); color: #fa5252; border: 1px solid #fa5252; padding: 12px; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; text-align: center;">
+                    {error}
+                </div>
+            )}
+
+            <form method="POST">
+                <div style="margin-bottom: 1.2rem;">
+                    <label for="email" style="font-weight: 600; font-size: 0.9rem; color: var(--text-muted);">Email Address</label>
+                    <input type="email" id="email" name="email" placeholder="name@example.com" required />
+                </div>
+                
+                <div style="margin-bottom: 2rem;">
+                    <label for="password" style="font-weight: 600; font-size: 0.9rem; color: var(--text-muted);">Password</label>
+                    <input type="password" id="password" name="password" placeholder="••••••••" required />
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%; font-size: 1rem; padding: 14px;">
+                    Sign In
+                </button>
+            </form>
+
+            <p style="text-align: center; margin-top: 1.5rem; color: var(--text-muted); font-size: 0.95rem;">
+                Don't have an account? <a href="/register" style="color: var(--primary-green); text-decoration: none; font-weight: 600;">Create Account</a>
+            </p>
+        </div>
+    </main>
+</body>
+</html>

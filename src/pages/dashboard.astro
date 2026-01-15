@@ -1,0 +1,132 @@
+---
+import { createSupabaseClient } from '../lib/supabase';
+import Navbar from '../components/Navbar.astro';
+import '../styles/global.css';
+
+const supabase = createSupabaseClient(Astro);
+const { data: { user } } = await supabase.auth.getUser();
+
+if (!user) {
+  return Astro.redirect('/login');
+}
+
+const { data: posts, error: fetchError } = await supabase
+  .from('posts')
+  .select('*')
+  .eq('author_id', user.id)
+  .order('created_at', { ascending: false });
+---
+
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard | EchoLog</title>
+</head>
+<body>
+    <Navbar />
+
+    <main class="container" style="padding: 20px;">
+        <header style="margin-bottom: 3rem; margin-top: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+                <h1 style="font-size: clamp(2rem, 5vw, 2.5rem); font-weight: 800; margin: 0;">Dashboard</h1>
+                <a href="/create" class="btn btn-primary" style="white-space: nowrap;">+ Create Post</a>
+            </div>
+            <p style="color: var(--text-muted); margin: 10px 0 0;">
+                Welcome, <span style="color: var(--primary-green); font-weight: 600;">{user.email}</span>
+            </p>
+        </header>
+
+        <section>
+            <h2 style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 2px; color: var(--primary-green); margin-bottom: 1.5rem; opacity: 0.8;">
+                Your Published Echoes
+            </h2>
+
+            {fetchError && <div class="card" style="color: #fa5252; border-color: #fa5252;">Error: {fetchError.message}</div>}
+
+            <div style="display: grid; gap: 20px;">
+                {posts && posts.length > 0 ? (
+                    posts.map((post) => (
+                        <div class="post-card-wrapper">
+                            <div class="card post-inner">
+                                <div class="post-info">
+                                    <h3 style="margin: 0 0 8px; font-size: 1.25rem;">{post.title}</h3>
+                                    <div style="display: flex; gap: 12px; font-size: 0.8rem; color: var(--text-muted);">
+                                        <span>{new Date(post.created_at).toLocaleDateString()}</span>
+                                        <span>•</span>
+                                        <span>{post.content.split(/\s+/).length} words</span>
+                                    </div>
+                                </div>
+
+                                <div class="post-actions">
+                                    <a href={`/post/edit/${post.id}`} class="btn btn-outline action-btn">
+                                        Edit
+                                    </a>
+                                    <form method="POST" action="/api/posts/delete" style="margin: 0;">
+                                        <input type="hidden" name="id" value={post.id} />
+                                        <button type="submit" class="btn delete-btn action-btn" onclick="return confirm('Delete forever?')">
+                                            Delete
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                ) : (
+                    <div style="text-align: center; padding: 3rem; color: var(--text-muted); border: 2px dashed var(--border-color); border-radius: 12px;">
+                        <p>No echoes found yet.</p>
+                        <a href="/create" style="color: var(--primary-green); text-decoration: none; font-weight: 700;">Start writing →</a>
+                    </div>
+                )}
+            </div>
+        </section>
+    </main>
+
+    <style>
+        .post-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            gap: 20px;
+        }
+
+        .post-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .post-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .delete-btn {
+            background: rgba(250, 82, 82, 0.1);
+            color: #fa5252;
+            border: 1px solid rgba(250, 82, 82, 0.2);
+        }
+
+        @media (max-width: 600px) {
+            .post-inner {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .post-actions {
+                width: 100%;
+                justify-content: stretch;
+            }
+            .action-btn {
+                flex: 1;
+            }
+        }
+    </style>
+</body>
+</html>

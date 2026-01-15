@@ -1,0 +1,156 @@
+---
+import { createSupabaseClient } from '../lib/supabase';
+const supabase = createSupabaseClient(Astro);
+const { data: { user } } = await supabase.auth.getUser();
+---
+
+<header class="nav-header">
+  <div class="nav-container">
+    <a href="/" class="logo">
+      EchoLog<span>.</span>
+    </a>
+
+    <button id="menu-toggle" aria-label="Toggle Menu">
+      <span class="hamburger-line"></span>
+      <span class="hamburger-line"></span>
+      <span class="hamburger-line"></span>
+    </button>
+
+    <nav id="nav-menu">
+      <ul>
+        <li><a href="/">Home</a></li>
+        {user ? (
+          <>
+            <li><a href="/dashboard">Dashboard</a></li>
+            <li><a href="/profile">Profile</a></li>
+            <li>
+              <form method="POST" action="/api/auth/logout">
+                <button type="submit" class="logout-btn">Logout</button>
+              </form>
+            </li>
+          </>
+        ) : (
+          <>
+            <li><a href="/login">Login</a></li>
+            <li><a href="/register" class="signup-btn">Sign Up</a></li>
+          </>
+        )}
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .nav-header {
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+  }
+
+  .nav-container {
+    display: flex;
+    justify-content: space-between; 
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem; 
+  }
+
+  .logo {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--primary-green);
+    text-decoration: none;
+    letter-spacing: -0.5px;
+  }
+
+  .logo span { color: white; }
+
+  #nav-menu ul {
+    list-style: none;
+    display: flex;
+    gap: 2rem;
+    margin: 0;
+    padding: 0;
+    align-items: center;
+  }
+
+  #nav-menu a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-weight: 500;
+    transition: 0.3s;
+    font-size: 0.95rem;
+  }
+
+  #nav-menu a:hover { color: var(--primary-green); }
+
+  .logout-btn {
+    background: transparent;
+    border: 1px solid var(--primary-green);
+    color: var(--primary-green);
+    padding: 6px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .signup-btn {
+    background: var(--primary-green) !important;
+    color: var(--bg-dark) !important;
+    padding: 8px 18px;
+    border-radius: 6px;
+  }
+
+  #menu-toggle {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+  }
+
+  .hamburger-line {
+    width: 25px;
+    height: 2px;
+    background-color: white;
+    transition: 0.3s;
+  }
+
+  @media (max-width: 768px) {
+    #menu-toggle { display: flex; } 
+
+    #nav-menu {
+      display: none; 
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 100%;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1.5rem;
+    }
+
+    #nav-menu.active { display: block; } 
+
+    #nav-menu ul {
+      flex-direction: column;
+      gap: 1.5rem;
+      text-align: left;
+    }
+  }
+</style>
+
+<script>
+  const toggle = document.getElementById('menu-toggle');
+  const menu = document.getElementById('nav-menu');
+
+  toggle?.addEventListener('click', () => {
+    menu?.classList.toggle('active');
+  });
+</script>

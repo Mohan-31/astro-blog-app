@@ -1,0 +1,257 @@
+---
+import { createSupabaseClient } from "../../lib/supabase";
+import Navbar from "../../components/Navbar.astro";
+import '../../styles/global.css';
+
+const { id } = Astro.params;
+const supabase = createSupabaseClient(Astro);
+
+const { data: post } = await supabase.from("posts").select("*").eq("id", id).single();
+const { data: comments } = await supabase
+  .from("comments")
+  .select("*")
+  .eq("post_id", id)
+  .order("created_at", { ascending: true });
+
+const { data: { user } } = await supabase.auth.getUser();
+
+if (!post) return Astro.redirect("/404");
+
+const formatContent = (content: string) => {
+  return content
+    .split('\n\n')
+    .filter(p => p.trim())
+    .map(p => `<p>${p.trim()}</p>`)
+    .join('');
+};
+---
+
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{post.title} | EchoLog</title>
+</head>
+<body>
+    <Navbar />
+
+    <main class="container">
+        <article class="card article-card">
+            <header class="article-header">
+                <h1 class="article-title">
+                    {post.title}
+                </h1>
+                <div class="article-meta">
+                    <span>Published: {new Date(post.created_at).toLocaleDateString()}</span>
+                    <span style="color: var(--primary-green);">•</span>
+                    <span>EchoLog Original</span>
+                </div>
+            </header>
+
+            <div 
+                class="post-content"
+                set:html={formatContent(post.content)}
+            />
+        </article>
+
+        <section class="comments-section">
+            <h3 class="comments-title">
+                Community Discussion
+            </h3>
+            
+            <div class="card comments-unified">
+                {user ? (
+                    <div class="comment-form-section">
+                        <form method="POST" action="/api/comments/create">
+                            <input type="hidden" name="post_id" value={post.id} />
+                            <label style="font-weight: 600; color: var(--primary-green); margin-bottom: 10px; display: block;">Add to the Echo</label>
+                            <textarea 
+                                name="content" 
+                                placeholder="Share your insights..." 
+                                required 
+                                style="height: 100px; margin-bottom: 15px;"
+                            ></textarea>
+                            <button type="submit" class="btn btn-primary">Post Comment</button>
+                        </form>
+                    </div>
+                ) : (
+                    <div class="signin-prompt-inline">
+                        <p style="margin-bottom: 1rem; color: var(--text-muted);">You must be signed in to join the discussion.</p>
+                        <a href="/login" class="btn btn-outline">Sign In to Comment</a>
+                    </div>
+                )}
+
+                <div class="comments-divider"></div>
+
+                <div class="comments-list">
+                    {comments && comments.length > 0 ? (
+                        comments.map((comment) => (
+                            <div class="comment-card">
+                                <strong class="comment-author">
+                                    {comment.user_email}
+                                </strong>
+                                <p class="comment-text">{comment.content}</p>
+                            </div>
+                        ))
+                    ) : (
+                        <p class="no-comments">No thoughts shared yet. Be the first!</p>
+                    )}
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <style>
+        .article-card {
+            margin-top: 2rem;
+            border-color: var(--primary-green);
+            overflow: hidden;
+        }
+
+        .article-header {
+            margin-bottom: 2rem;
+        }
+
+        .article-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 1rem;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            hyphens: auto;
+        }
+
+        .article-meta {
+            color: var(--text-muted);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            font-size: 0.9rem;
+        }
+
+        .post-content {
+            font-size: 1.1rem;
+            color: #d1d5db;
+            line-height: 1.8;
+            max-width: 100%;
+        }
+
+        .post-content p {
+            margin-bottom: 1.5rem;
+            text-align: justify;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .post-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        .comments-section {
+            margin-top: 4rem;
+        }
+
+        .comments-title {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .comments-unified {
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .comment-form-section {
+            padding: 1.5rem;
+            padding-bottom: 2rem;
+            background: rgba(16, 185, 129, 0.03);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .comment-form-section .btn {
+            margin-bottom: 0.5rem;
+        }
+
+        .signin-prompt-inline {
+            padding: 2rem 1.5rem;
+            text-align: center;
+            background: rgba(16, 185, 129, 0.03);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .comments-divider {
+            height: 1px;
+            background: var(--border-color);
+        }
+
+        .comments-list {
+            padding: 0;
+            margin-top: 1rem;
+        }
+
+        .comment-card {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            transition: background 0.2s ease;
+        }
+
+        .comment-card:last-child {
+            border-bottom: none;
+        }
+
+        .comment-card:hover {
+            background: rgba(16, 185, 129, 0.03);
+        }
+
+        .comment-author {
+            display: block;
+            color: var(--primary-green);
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .comment-text {
+            margin: 0;
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        .no-comments {
+            padding: 3rem 1.5rem;
+            text-align: center;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        @media (max-width: 768px) {
+            .article-title {
+                font-size: 1.8rem;
+            }
+
+            .post-content {
+                font-size: 1rem;
+            }
+
+            .comments-title {
+                font-size: 1.3rem;
+            }
+
+            .article-card {
+                padding: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .article-title {
+                font-size: 1.5rem;
+            }
+
+            .article-meta {
+                font-size: 0.8rem;
+                gap: 10px;
+            }
+        }
+    </style>
+</body>
+</html>
